@@ -2,8 +2,9 @@
 
 # specify here default training configuration
 defaults:
+  - base_config
   - _self_
-  - datamodule: mnist.yaml
+  - datamodule: mnist
   - model: mnist.yaml
   - callbacks: default.yaml
   - logger: null # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
@@ -45,9 +46,13 @@ ignore_warnings: True
 # set False to skip model training
 train: True
 
+# evaluate on *validation* set, using best model weights achieved during training
+# lightning chooses best weights based on the metric specified in checkpoint callback
+validate: True
+
 # evaluate on test set, using best model weights achieved during training
 # lightning chooses best weights based on the metric specified in checkpoint callback
-test: True
+test: False
 
 # seed for random number generators in pytorch, numpy and python.random
 seed: null

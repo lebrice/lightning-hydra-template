@@ -1,19 +1,27 @@
-from torch import nn
+from __future__ import annotations
+
+from tkinter.tix import InputOnly
+
+from torch import Tensor, nn
 
 
 class SimpleDenseNet(nn.Module):
     def __init__(
         self,
-        input_size: int = 784,
+        input_size: int | None = None,
         lin1_size: int = 256,
         lin2_size: int = 256,
         lin3_size: int = 256,
         output_size: int = 10,
     ):
         super().__init__()
-
         self.model = nn.Sequential(
-            nn.Linear(input_size, lin1_size),
+            nn.Flatten(),
+            (
+                nn.LazyLinear(lin1_size)
+                if input_size is None
+                else nn.Linear(input_size, lin1_size)
+            ),
             nn.BatchNorm1d(lin1_size),
             nn.ReLU(),
             nn.Linear(lin1_size, lin2_size),
@@ -25,10 +33,5 @@ class SimpleDenseNet(nn.Module):
             nn.Linear(lin3_size, output_size),
         )
 
-    def forward(self, x):
-        batch_size, channels, width, height = x.size()
-
-        # (batch, 1, width, height) -> (batch, 1*width*height)
-        x = x.view(batch_size, -1)
-
+    def forward(self, x: Tensor) -> Tensor:
         return self.model(x)

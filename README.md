@@ -424,11 +424,11 @@ Have a question? Found a bug? Missing a specific feature? Have an idea for impro
 All PyTorch Lightning modules are dynamically instantiated from module paths specified in config. Example model config:
 
 ```yaml
-_target_: src.models.mnist_model.MNISTLitModule
+_target_: project.models.mnist_model.MNISTLitModule
 lr: 0.001
 
 net:
-  _target_: src.models.components.simple_dense_net.SimpleDenseNet
+  _target_: project.models.components.simple_dense_net.SimpleDenseNet
   input_size: 784
   lin1_size: 256
   lin2_size: 256
@@ -763,7 +763,7 @@ The following code is an example of loading model from checkpoint and running pr
 from PIL import Image
 from torchvision import transforms
 
-from src.models.mnist_module import MNISTLitModule
+from project.models.mnist_module import MNISTLitModule
 
 
 def predict():
