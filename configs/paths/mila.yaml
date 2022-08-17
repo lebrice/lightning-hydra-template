@@ -4,7 +4,7 @@
 root_dir: ${oc.env:PROJECT_ROOT}
 
 # path to data directory
-data_dir: ${paths.root_dir}/data/
+data_dir: ${oc.env:SLURM_TMPDIR}
 
 # path to logging directory
 log_dir: ${paths.root_dir}/logs/
@@ -17,5 +17,4 @@ output_dir: ${hydra:runtime.output_dir}
 # path to working directory
 work_dir: ${hydra:runtime.cwd}
 
-# Path to torchvision datasets.
 torchvision_dir: /network/datasets/torchvision
