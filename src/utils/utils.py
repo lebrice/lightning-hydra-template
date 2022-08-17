@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import time
 import warnings
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Callable, List
 
 import hydra
 from omegaconf import DictConfig
@@ -34,8 +36,8 @@ def task_wrapper(task_func: Callable) -> Callable:
         extras(cfg)
 
         # execute the task
+        start_time = time.time()
         try:
-            start_time = time.time()
             metric_dict, object_dict = task_func(cfg=cfg)
         except Exception as ex:
             log.exception("")  # save exception to `.log` file
@@ -90,9 +92,9 @@ def save_file(path: str, content: str) -> None:
         file.write(content)
 
 
-def instantiate_callbacks(callbacks_cfg: DictConfig) -> List[Callback]:
+def instantiate_callbacks(callbacks_cfg: DictConfig) -> list[Callback]:
     """Instantiates callbacks from config."""
-    callbacks: List[Callback] = []
+    callbacks: list[Callback] = []
 
     if not callbacks_cfg:
         log.warning("Callbacks config is empty.")
@@ -109,9 +111,9 @@ def instantiate_callbacks(callbacks_cfg: DictConfig) -> List[Callback]:
     return callbacks
 
 
-def instantiate_loggers(logger_cfg: DictConfig) -> List[LightningLoggerBase]:
+def instantiate_loggers(logger_cfg: DictConfig) -> list[LightningLoggerBase]:
     """Instantiates loggers from config."""
-    logger: List[LightningLoggerBase] = []
+    logger: list[LightningLoggerBase] = []
 
     if not logger_cfg:
         log.warning("Logger config is empty.")

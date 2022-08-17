@@ -53,24 +53,26 @@ repos:
         args:
           [
             "--extend-ignore",
-            "E203,E402,E501,F401,F841",
+            "E203,E402,E501,F401,F841,E401,W504,W503",
             "--exclude",
             "logs/*,data/*",
           ]
 
+  # NOTE: Disabling this, it's annoying.
   # python security linter
-  - repo: https://github.com/PyCQA/bandit
-    rev: "1.7.1"
-    hooks:
-      - id: bandit
-        args: ["-s", "B101"]
+  # - repo: https://github.com/PyCQA/bandit
+  #   rev: "1.7.1"
+  #   hooks:
+  #     - id: bandit
+  #       args: ["-s", "B101"]
 
-  # yaml formatting
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.7.1
-    hooks:
-      - id: prettier
-        types: [yaml]
+  # NOTE: Disabling this, since I'm having the glib-c2.29 weird bug.
+  # # yaml formatting
+  # - repo: https://github.com/pre-commit/mirrors-prettier
+  #   rev: v2.7.1
+  #   hooks:
+  #     - id: prettier
+  #       types: [yaml]
 
   # shell scripts linter
   - repo: https://github.com/shellcheck-py/shellcheck-py
