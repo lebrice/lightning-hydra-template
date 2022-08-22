@@ -1,1 +1,1 @@
-from .glue_datamodule import GLUEDataModule
+from .glue_datamodule import GlueDataModule

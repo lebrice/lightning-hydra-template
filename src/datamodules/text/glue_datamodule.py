@@ -39,7 +39,7 @@ Task = Literal[
 ]
 
 
-class GLUEDataModule(LightningDataModule):
+class GlueDataModule(LightningDataModule):
 
     task_text_field_map: dict[Task, list[str]] = {
         "cola": ["sentence"],
