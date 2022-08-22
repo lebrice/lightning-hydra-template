@@ -31,7 +31,7 @@ from datasets.load import load_metric
 from transformers.modeling_outputs import SequenceClassifierOutput
 from datasets.features import Features
 
-from src.datamodules.text.glue_datamodule import GLUEDataModule
+from src.datamodules.text.glue_datamodule import GlueDataModule
 
 Stage = Literal["train", "val", "test"]
 
@@ -46,7 +46,7 @@ class StepOutput(TypedDict):
 class GLUETransformer(LightningModule):
     @dataclass
     class HParams:
-        model_name_or_path: str = "albert-base-v2"
+        model_name_or_path: str | None = None
         learning_rate: float = 2e-5
         adam_epsilon: float = 1e-8
         warmup_steps: int = 0
@@ -56,25 +56,29 @@ class GLUETransformer(LightningModule):
 
     def __init__(
         self,
-        datamodule: GLUEDataModule,
-        hparams: HParams | None = None,
+        datamodule: GlueDataModule,
+        hp: HParams | None = None,
     ):
         super().__init__()
+        self.datamodule = datamodule
         self.task_name = datamodule.task_name
-        self.hparams = hparams or self.HParams()
+        self.hp = hp or self.HParams()
         self.num_labels = datamodule.num_labels
-
+        self.hp.model_name_or_path = (
+            self.hp.model_name_or_path or datamodule.model_name_or_path
+        )
         self.config = AutoConfig.from_pretrained(
-            self.hparams.model_name_or_path, num_labels=self.num_labels
+            self.hp.model_name_or_path, num_labels=self.num_labels
         )
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            self.hparams.model_name_or_path, config=self.config
+            self.hp.model_name_or_path, config=self.config
         )
         self.metric = datasets.load.load_metric(
             "glue",
             self.task_name,
             experiment_id=datetime.now().strftime("%d-%m-%Y_%H-%M-%S"),
         )
+        # NOTE: Add more metrics here if you want.
         self.metrics: dict[str, dict[str, Metric]] = {
             "metrics_train": {
                 "matthews_corr": MatthewsCorrCoef(num_classes=self.num_labels),
@@ -91,7 +95,9 @@ class GLUETransformer(LightningModule):
         }
         self.metrics = nn.ModuleDict({k: nn.ModuleDict(v) for k, v in self.metrics.items()})  # type: ignore
 
-        self.save_hyperparameters(self.hparams)
+        self.save_hyperparameters(
+            {"hp": dataclasses.asdict(self.hp), "datamodule": self.datamodule.hparams}
+        )
 
     def forward(self, inputs: dict[str, Tensor]) -> SequenceClassifierOutput:
         return self.model(**inputs)
@@ -202,7 +208,7 @@ class GLUETransformer(LightningModule):
                     for name, parameter in model.named_parameters()
                     if not any(nd in name for nd in no_decay)
                 ],
-                "weight_decay": self.hparams.weight_decay,
+                "weight_decay": self.hp.weight_decay,
             },
             {
                 "params": [
@@ -215,41 +221,14 @@ class GLUETransformer(LightningModule):
         ]
         optimizer = AdamW(
             optimizer_grouped_parameters,
-            lr=self.hparams.learning_rate,
-            eps=self.hparams.adam_epsilon,
+            lr=self.hp.learning_rate,
+            eps=self.hp.adam_epsilon,
         )
 
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
-            num_warmup_steps=self.hparams.warmup_steps,
+            num_warmup_steps=self.hp.warmup_steps,
             num_training_steps=self.trainer.estimated_stepping_batches,
         )
         scheduler = {"scheduler": scheduler, "interval": "step", "frequency": 1}
         return [optimizer], [scheduler]
-
-    @property
-    def hparams(self) -> HParams:
-        """The collection of hyperparameters saved with :meth:`save_hyperparameters`. It is mutable by the user.
-        For the frozen set of initial hyperparameters, use :attr:`hparams_initial`.
-
-        Returns:
-            Mutable hyperparameters dictionary
-        """
-        if not hasattr(self, "_hparams"):
-            self._hparams = type(self).HParams(**super().hparams)
-        return self._hparams
-
-    @hparams.setter
-    def hparams(self, value: Any):
-        if not hasattr(self, "_hparams"):
-            self._hparams = type(self).HParams(**super().hparams)
-        else:
-            raise RuntimeError(
-                f"can't set hparams attribute after model has been instantiated!"
-            )
-
-    @staticmethod
-    def _to_hparams_dict(hp):
-        if is_dataclass(hp):
-            hp = dataclasses.asdict(hp)
-        return LightningModule._to_hparams_dict(hp)
