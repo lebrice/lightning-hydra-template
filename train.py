@@ -10,90 +10,20 @@ import hydra_zen
 from hydra.core.config_store import ConfigStore
 from hydra_configs.pytorch_lightning.trainer import TrainerConf
 
-# from hydra_configs.torchvision.datasets.cifar import Cifar10Conf
-from hydra_zen.typing import Partial, PartialBuilds
-from omegaconf import DictConfig
-from pytorch_lightning import LightningDataModule, LightningModule, Trainer
+from hydra_zen.typing import Partial
+from omegaconf import DictConfig, ListConfig
+from pytorch_lightning import LightningModule
 from pytorch_lightning.loggers import LightningLoggerBase
+from hydra_zen import MISSING
+from pl_bolts.datamodules import MNISTDataModule
 
 # load environment variables from `.env` file if it exists
 # recursively searches for `.env` in all folders starting from work dir
 dotenv.load_dotenv(override=True)
-# from hydra_configs.torchvision.models import AlexnetConf
 
-from hydra_zen import MISSING
-from pl_bolts.datamodules import MNISTDataModule
-
-
-@dataclass
-class Config:
-
-    datamodule: Any = MISSING
-
-    original_work_dir: str = ""
-    """
-    path to original working directory
-    hydra hijacks working directory by changing it to the new log directory
-    https://hydra.cc/docs/next/tutorials/basic/running_your_app/working_directory
-    """
-
-    data_dir: str = "/data"
-    """ path to folder with data """
-
-    print_config: bool = True
-    """ pretty print config at the start of the run using Rich library. """
-
-    ignore_warnings: bool = False
-    """ disable python warnings if they annoy you """
-
-    train: bool = True
-    # set False to skip model training
-
-    validate: bool = True
-    """ Evaluate on *validation* set, using best model weights achieved during training
-    lightning chooses best weights based on the metric specified in checkpoint callback.
-    """
-
-    test: bool = False
-    """
-    Evaluate on test set, using best model weights achieved during training
-    lightning chooses best weights based on the metric specified in checkpoint callback
-    """
-
-    seed: Optional[int] = None
-    """ seed for random number generators in pytorch, numpy and python.random """
-
-    name: str = "default"
-    """
-    Default name for the experiment, determines logging folder path
-    (you can overwrite this name in experiment configs)
-    """
-
-    model: Partial[LightningModule] = hydra_zen.load_from_yaml(
-        "configs/model/mnist.yaml"
-    )
-
-    callbacks: DictConfig = hydra_zen.load_from_yaml("configs/callbacks/default.yaml")
-    trainer: TrainerConf = hydra_zen.load_from_yaml("configs/trainer/default.yaml")
-
-    logger: Partial[LightningLoggerBase] = hydra_zen.load_from_yaml(
-        "configs/logger/none.yaml"
-    )
-    """ Set logger here or use command line (e.g. `python train.py logger=tensorboard`) """
-
-    def __post_init__(self) -> None:
-        self.original_work_dir = hydra.utils.get_original_cwd()
-
-    # datamodule:
-    # model: mnist.yaml
-    # callbacks: default.yaml
-    # logger: null
-    # trainer: default.yaml
-    # log_dir: default.yaml
-
+from project.train_config import Config
 
 cs = ConfigStore.instance()
-# from project.datamodules.mnist_datamodule import MNISTDataModule
 
 cs.store(name="base_config", node=Config)
 
@@ -113,22 +43,36 @@ cs.store(
 )
 
 
+# TODO: Seems a bit tough to regiser the models atm.
+# from hydra_zen import MISSING, builds, make_custom_builds_fn
+
+# pbuilds = make_custom_builds_fn(zen_partial=True, populate_full_signature=True)
+# # Register model configs:
+# from project.models.base import VisionModel
+
+# cs.store(
+#     group="model",
+#     name="base",
+#     node=VisionModel.HParams,
+# )
+
 from hydra_zen import instantiate
+from omegaconf import OmegaConf
 
 
 @hydra.main(config_path="configs/", config_name="train.yaml")
-def main(config: DictConfig):
-    config_after = instantiate(config)
-    # assert False, config.datamodule
-    assert False, (type(config), type(config_after))
-    # Imports can be nested inside @hydra.main to optimize tab completion
-    # https://github.com/facebookresearch/hydra/issues/934
-    from src import utils
-
+def main(raw_config: DictConfig):
+    from project.utils import extras
     from project.training_pipeline import train
 
     # Applies optional utilities
-    utils.extras(config)
+    extras(raw_config)
+
+    # Create the datamodules, etc.
+    instantiated_config = instantiate(raw_config, data_dir="BOB")
+    config = OmegaConf.to_object(instantiated_config)
+    # Imports can be nested inside @hydra.main to optimize tab completion
+    # https://github.com/facebookresearch/hydra/issues/934
 
     # Train model
     return train(config)
