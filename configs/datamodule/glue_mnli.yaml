@@ -1,0 +1,3 @@
+_target_: src.datamodules.text.GLUEDataModule
+model_name_or_path: distilbert-base-cased
+task_name: mnli
