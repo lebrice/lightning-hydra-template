@@ -1,2 +1,0 @@
-_target_: src.datamodules.vision.ImagenetFfcvDataModule
-batch_size: 128
