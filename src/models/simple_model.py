@@ -64,12 +64,12 @@ class SimpleModel(LightningModule):
         self.loss = torch.nn.CrossEntropyLoss()
 
         # use separate metric instance for train, val and test step
-        self.accuracy: dict[Stage, Accuracy] = {
-            "train": Accuracy(),
-            "val": Accuracy(),
-            "test": Accuracy(),
+        self.metrics: dict[str, Accuracy] = {
+            "train/accuracy": Accuracy(),
+            "val/accuracy": Accuracy(),
+            "test/accuracy": Accuracy(),
         }
-        self.accuracy = nn.ModuleDict(self.accuracy)  # type: ignore
+        self.metrics = nn.ModuleDict(self.metrics)  # type: ignore
         self.save_hyperparameters(logger=True, ignore=["net"])
 
     def forward(self, x: Tensor) -> Tensor:
@@ -84,9 +84,16 @@ class SimpleModel(LightningModule):
         return {"loss": loss, "logits": logits, "y": y}
 
     def shared_step_end(self, step_output: StepOutput, stage: Stage) -> StepOutput:
-        self.accuracy[stage](step_output["logits"], step_output["y"])
-        self.log(f"{stage}/accuracy", self.accuracy[stage])
-        self.log(f"{stage}/loss", step_output["loss"])
+        logits = step_output["logits"]
+        y = step_output["y"]
+        loss = step_output["loss"]
+        metrics_for_this_stage = {
+            k: metric for k, metric in self.metrics.items() if k.startswith(f"{stage}/")
+        }
+        for name, metric in metrics_for_this_stage.items():
+            metric.update(logits, target=y)
+            self.log(name, metric)
+        self.log(f"{stage}/loss", loss)
         return step_output
 
     def training_step(self, batch: tuple[Tensor, Tensor], batch_idx: int) -> StepOutput:

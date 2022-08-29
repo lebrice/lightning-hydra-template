@@ -1,2 +1,0 @@
-_target_: src.datamodules.vision.ImagenetDataModule
-batch_size: 128
