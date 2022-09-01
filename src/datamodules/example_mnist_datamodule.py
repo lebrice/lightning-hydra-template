@@ -49,6 +49,11 @@ class ExampleMNISTDataModule(LightningDataModule):
         pin_memory: bool = False,
     ):
         super().__init__()
+        self.data_dir = data_dir
+        self.train_val_test_split = train_val_test_split
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.pin_memory = pin_memory
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
@@ -72,8 +77,8 @@ class ExampleMNISTDataModule(LightningDataModule):
 
         Do not use it to assign state (self.x = y).
         """
-        MNIST(self.hparams.data_dir, train=True, download=True)
-        MNIST(self.hparams.data_dir, train=False, download=True)
+        MNIST(self.data_dir, train=True, download=True)
+        MNIST(self.data_dir, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None):
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
@@ -83,39 +88,42 @@ class ExampleMNISTDataModule(LightningDataModule):
         """
         # load and split datasets only if not loaded already
         if not self.data_train and not self.data_val and not self.data_test:
-            trainset = MNIST(self.hparams.data_dir, train=True, transform=self.transforms)
-            testset = MNIST(self.hparams.data_dir, train=False, transform=self.transforms)
+            trainset = MNIST(self.data_dir, train=True, transform=self.transforms)
+            testset = MNIST(self.data_dir, train=False, transform=self.transforms)
             dataset = ConcatDataset(datasets=[trainset, testset])
             self.data_train, self.data_val, self.data_test = random_split(
                 dataset=dataset,
-                lengths=self.hparams.train_val_test_split,
+                lengths=self.train_val_test_split,
                 generator=torch.Generator().manual_seed(42),
             )
 
     def train_dataloader(self):
+        assert self.data_train is not None
         return DataLoader(
             dataset=self.data_train,
-            batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
             shuffle=True,
         )
 
     def val_dataloader(self):
+        assert self.data_val is not None
         return DataLoader(
             dataset=self.data_val,
-            batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
             shuffle=False,
         )
 
     def test_dataloader(self):
+        assert self.data_test is not None
         return DataLoader(
             dataset=self.data_test,
-            batch_size=self.hparams.batch_size,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=self.pin_memory,
             shuffle=False,
         )
 
