@@ -1,18 +1,18 @@
 import os
+from pathlib import Path
 
 import pytest
 from hydra.core.hydra_config import HydraConfig
-from omegaconf import open_dict
+from omegaconf import DictConfig, open_dict
 
-from src.eval import evaluate
-from src.train import train
+from eval import evaluate
+from train import train
 
 
 @pytest.mark.slow
-def test_train_eval(tmp_path, cfg_train, cfg_eval):
+def test_train_eval(tmp_path: Path, cfg_train: DictConfig, cfg_eval: DictConfig):
     """Train for 1 epoch with `train.py` and evaluate with `eval.py`"""
     assert str(tmp_path) == cfg_train.paths.output_dir == cfg_eval.paths.output_dir
-
     with open_dict(cfg_train):
         cfg_train.trainer.max_epochs = 1
         cfg_train.test = True

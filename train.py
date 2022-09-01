@@ -2,7 +2,6 @@ from typing import List, Optional, Tuple
 
 # this file acts as a robust starting point for launching hydra runs and multiruns
 # can be run from any place
-import cv2  # noqa (Has to be done before any ffcv/torch-related imports).
 import hydra
 import pyrootutils
 import pytorch_lightning as pl
@@ -103,7 +102,9 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
     if cfg.get("validate"):
         log.info("Starting validation!")
-        trainer.validate(model=model, datamodule=datamodule, ckpt_path="best")
+        ckpt_path = "best" if not cfg.trainer.get("fast_dev_run") else None
+        datamodule.setup("validate")  # BUG: Why do we have to call this manually?
+        trainer.validate(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
 
     if cfg.get("test"):
         log.info("Starting testing!")
