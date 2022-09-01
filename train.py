@@ -1,4 +1,18 @@
+from typing import List, Optional, Tuple
+
+# this file acts as a robust starting point for launching hydra runs and multiruns
+# can be run from any place
+import cv2  # noqa (Has to be done before any ffcv/torch-related imports).
+import hydra
 import pyrootutils
+import pytorch_lightning as pl
+from omegaconf import DictConfig
+from pytorch_lightning import Callback, LightningDataModule, LightningModule, Trainer
+from pytorch_lightning.loggers import LightningLoggerBase
+
+from src import utils
+
+log = utils.get_pylogger(__name__)
 
 # --------------------------------------------------------------------------------------
 # `pyrootutils.setup_root(...)` is recommended at the top of each start file
@@ -28,21 +42,6 @@ root = pyrootutils.setup_root(
 # - modify paths in "configs/paths/default.yaml" to not use PROJECT_ROOT
 #
 # --------------------------------------------------------------------------------------
-
-from typing import List, Optional, Tuple
-
-# this file acts as a robust starting point for launching hydra runs and multiruns
-# can be run from any place
-import cv2  # noqa (Has to be done before any ffcv/torch-related imports).
-import hydra
-import pytorch_lightning as pl
-from omegaconf import DictConfig
-from pytorch_lightning import Callback, LightningDataModule, LightningModule, Trainer
-from pytorch_lightning.loggers import LightningLoggerBase
-
-from src import utils
-
-log = utils.get_pylogger(__name__)
 
 
 @utils.task_wrapper
@@ -77,9 +76,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
     logger: List[LightningLoggerBase] = utils.instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
-    trainer: Trainer = hydra.utils.instantiate(
-        cfg.trainer, callbacks=callbacks, logger=logger
-    )
+    trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks, logger=logger)
 
     object_dict = {
         "cfg": cfg,
@@ -102,21 +99,11 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
     if cfg.get("validate"):
         log.info("Starting validation!")
-        ckpt_path = trainer.checkpoint_callback.best_model_path
-        if ckpt_path == "":
-            log.warning("Best ckpt not found! Using current weights for validation...")
-            ckpt_path = None
-        trainer.validate(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
-        log.info(f"Best ckpt path: {ckpt_path}")
+        trainer.validate(model=model, datamodule=datamodule, ckpt_path="best")
 
     if cfg.get("test"):
         log.info("Starting testing!")
-        ckpt_path = trainer.checkpoint_callback.best_model_path
-        if ckpt_path == "":
-            log.warning("Best ckpt not found! Using current weights for testing...")
-            ckpt_path = None
-        trainer.test(model=model, datamodule=datamodule, ckpt_path=ckpt_path)
-        log.info(f"Best ckpt path: {ckpt_path}")
+        trainer.test(model=model, datamodule=datamodule, ckpt_path="best")
 
     test_metrics = trainer.callback_metrics
 
@@ -126,7 +113,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
     return metric_dict, object_dict
 
 
-@hydra.main(version_base="1.2", config_path=root / "configs", config_name="train.yaml")
+@hydra.main(version_base="1.2", config_path=str(root / "configs"), config_name="train.yaml")
 def main(cfg: DictConfig) -> Optional[float]:
 
     # train the model
