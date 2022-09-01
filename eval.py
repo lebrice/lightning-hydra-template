@@ -1,4 +1,14 @@
+from typing import List, Tuple
+
+import hydra
 import pyrootutils
+from omegaconf import DictConfig
+from pytorch_lightning import LightningDataModule, LightningModule, Trainer
+from pytorch_lightning.loggers import LightningLoggerBase
+
+from src import utils
+
+log = utils.get_pylogger(__name__)
 
 root = pyrootutils.setup_root(
     search_from=__file__,
@@ -32,17 +42,6 @@ root = pyrootutils.setup_root(
 #
 # https://github.com/ashleve/pyrootutils
 # ------------------------------------------------------------------------------------ #
-
-from typing import List, Tuple
-
-import hydra
-from omegaconf import DictConfig
-from pytorch_lightning import LightningDataModule, LightningModule, Trainer
-from pytorch_lightning.loggers import LightningLoggerBase
-
-from src import utils
-
-log = utils.get_pylogger(__name__)
 
 
 @utils.task_wrapper
@@ -96,7 +95,7 @@ def evaluate(cfg: DictConfig) -> Tuple[dict, dict]:
     return metric_dict, object_dict
 
 
-@hydra.main(version_base="1.2", config_path=root / "configs", config_name="eval.yaml")
+@hydra.main(version_base="1.2", config_path=str(root / "configs"), config_name="eval.yaml")
 def main(cfg: DictConfig) -> None:
     evaluate(cfg)
 
