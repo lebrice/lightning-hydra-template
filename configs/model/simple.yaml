@@ -8,9 +8,4 @@ optimizer_partial:
   weight_decay: 0.0
 
 net:
-  _target_: src.models.components.simple_dense_net.SimpleDenseNet
-  input_size: 784
-  lin1_size: 64
-  lin2_size: 128
-  lin3_size: 64
-  output_size: 10
+  _target_: torchvision.models.resnet18

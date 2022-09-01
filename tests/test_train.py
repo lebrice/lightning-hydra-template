@@ -4,8 +4,8 @@ import pytest
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import open_dict
 
-from src.train import train
 from tests.helpers.run_if import RunIf
+from train import train
 
 
 def test_train_fast_dev_run(cfg_train):

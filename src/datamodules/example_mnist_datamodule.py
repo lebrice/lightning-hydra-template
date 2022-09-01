@@ -1,15 +1,18 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import torch
+
+# NOTE: The 'true' MNIST DataModule is found here:
+# from pl_bolts.datamodules.mnist_datamodule import MNISTDataModule
+# An optimized version for the current cluster is found here:
+# from mila_datamodules.vision import MNISTDataModule
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
 from torchvision.datasets import MNIST
 from torchvision.transforms import transforms
 
-# from pl_bolts.datamodules.mnist_datamodule import MNISTDataModule
 
-
-class MNISTDataModule(LightningDataModule):
+class ExampleMNISTDataModule(LightningDataModule):
     """Example of LightningDataModule for MNIST dataset.
 
     A DataModule implements 5 key methods:
@@ -118,15 +121,13 @@ class MNISTDataModule(LightningDataModule):
 
     def teardown(self, stage: Optional[str] = None):
         """Clean up after fit or test."""
-        pass
 
     def state_dict(self):
         """Extra things to save to checkpoint."""
         return {}
 
-    def load_state_dict(self, state_dict: Dict[str, Any]):
+    def load_state_dict(self, state_dict: dict[str, Any]):
         """Things to do when loading checkpoint."""
-        pass
 
 
 if __name__ == "__main__":
