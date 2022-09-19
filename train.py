@@ -11,6 +11,11 @@ from pytorch_lightning.loggers import LightningLoggerBase
 
 from src import utils
 
+# NOTE: Currently trying to make multi-node work "interactively". Doesn't really work.
+# Even when running the same command from both nodes with this line here, both jobs think they are
+# worker 2/2.. Only way that works reliably is to launch with srun from a login node.
+# setup_slurm_env_variables()
+
 log = utils.get_pylogger(__name__)
 
 root = pyrootutils.setup_root(
