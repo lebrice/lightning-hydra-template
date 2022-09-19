@@ -1,32 +1,19 @@
 from __future__ import annotations
 
-import sys
-import types
 from functools import partial
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Protocol,
-    TypedDict,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import Literal, TypedDict, TypeVar
 
 import torch
 from pl_bolts.datamodules.vision_datamodule import VisionDataModule
-from pytorch_lightning import LightningDataModule, LightningModule
+from pytorch_lightning import LightningModule
 from torch import Tensor, nn
-from torchmetrics import MaxMetric
 from torchmetrics.classification.accuracy import Accuracy
-from typing_extensions import ParamSpec, Self
+from typing_extensions import ParamSpec
 
 P = ParamSpec("P")
 T_co = TypeVar("T_co", covariant=True)
-# Partial = Callable[P, T_co]
-# Partial = partial[T_co]
 
-OptimType_co = TypeVar("OptimType_co", covariant=True, bound=torch.optim.Optimizer)
+OptimizerType_co = TypeVar("OptimizerType_co", covariant=True, bound=torch.optim.Optimizer)
 Stage = Literal["train", "val", "test"]
 
 
@@ -54,9 +41,10 @@ class SimpleModel(LightningModule):
         self,
         datamodule: VisionDataModule,
         net: nn.Module,
-        optimizer_partial: partial[OptimType_co] = partial(torch.optim.Adam),
+        optimizer_partial: partial[OptimizerType_co] = partial(torch.optim.Adam),
     ):
         super().__init__()
+        self.datamodule = datamodule
         self.net = net
         self.optimizer_partial = optimizer_partial
 
@@ -65,9 +53,9 @@ class SimpleModel(LightningModule):
 
         # use separate metric instance for train, val and test step
         self.metrics: dict[str, Accuracy] = {
-            "train/accuracy": Accuracy(),
-            "val/accuracy": Accuracy(),
-            "test/accuracy": Accuracy(),
+            "train/acc": Accuracy(),
+            "val/acc": Accuracy(),
+            "test/acc": Accuracy(),
         }
         self.metrics = nn.ModuleDict(self.metrics)  # type: ignore
         self.save_hyperparameters(logger=True, ignore=["net"])
